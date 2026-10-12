@@ -1,5 +1,6 @@
 
 
+
 name: Build AutoAnchor
 
 on:
@@ -28,17 +29,24 @@ jobs:
         with:
           gradle-version: '8.14.3'
 
-      - name: Extract source ZIP
+      - name: Find and extract ZIP
         run: |
+          ZIP_FILE="$(find . -type f -iname '*AutoAnchor*.zip' -print -quit)"
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERROR: No AutoAnchor ZIP found in repository"
+            find . -maxdepth 3 -type f
+            exit 1
+          fi
+          echo "Found ZIP: $ZIP_FILE"
           mkdir project
-          unzip -o AutoAnchor-Fabric-1.21.11-source.zip -d project
+          unzip -o "$ZIP_FILE" -d project
           find project -name build.gradle -print
 
       - name: Build mod
         run: |
           BUILD_FILE="$(find project -name build.gradle -print -quit)"
           if [ -z "$BUILD_FILE" ]; then
-            echo "Could not find build.gradle in the ZIP"
+            echo "ERROR: build.gradle was not found inside the ZIP"
             exit 1
           fi
           cd "$(dirname "$BUILD_FILE")"
@@ -49,3 +57,5 @@ jobs:
         with:
           name: AutoAnchor-JAR
           path: project/**/build/libs/*.jar
+          if-no-files-found: error
+
