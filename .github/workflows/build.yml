@@ -1,4 +1,5 @@
 
+
 name: Build AutoAnchor
 
 on:
@@ -24,12 +25,27 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Extract source ZIP
+        run: |
+          mkdir project
+          unzip -o AutoAnchor-Fabric-1.21.11-source.zip -d project
+          find project -name build.gradle -print
 
       - name: Build mod
-        run: gradle build --no-daemon
+        run: |
+          BUILD_FILE="$(find project -name build.gradle -print -quit)"
+          if [ -z "$BUILD_FILE" ]; then
+            echo "Could not find build.gradle in the ZIP"
+            exit 1
+          fi
+          cd "$(dirname "$BUILD_FILE")"
+          gradle build --no-daemon
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: AutoAnchor-JAR
-          path: build/libs/*.jar
+          path: project/**/build/libs/*.jar
